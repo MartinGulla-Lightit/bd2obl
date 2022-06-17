@@ -1,0 +1,134 @@
+db.createCollection("contents", {
+    validator: {
+        $jsonSchema:{
+            bsonType:"object",
+            required :["title", "user", "startedAt", "quality", "category"],
+            properties:{
+                title:{
+                    bsonType:"string",
+                    description:"title of the stream"
+                },
+                user:{
+                    bsonType:"object",
+                    description:"channel where the stream takes place"
+                },
+                startedAt:{
+                    bsonType:"timestamp",
+                    description:"time when the stream was started"
+                },
+                endedAt:{
+                    bsonType:"timestamp",
+                    description:"time when the stream was ended"
+                },
+                elapsedTime:{
+                    bsonType:["number"],
+                    description:"time elapsed during the stream",
+                    properties:{
+                        hours:{
+                        bsonType:"number",
+                        minimum:0,
+                        maximum:23
+                        },
+                        minutes:{
+                            bsonType:"number",
+                            minimum:0,
+                            maximum:59
+                        },
+                        seconds:{
+                            bsonType:"number",
+                            minimum:0,
+                            maximum:59
+                        }
+                    }
+                },
+                peakSpectator:{
+                    bsonType:"number",
+                    description:"peak number of spectators"
+                },
+                quality:{
+                    bsonType:"string",
+                    description:"quality of the stream",
+                    enum:["UHD", "QHD", "1080p60", "720p60", "480p", "360p", "160p"]
+                },
+                category:{
+                    bsonType:"object",
+                    required:["mainCategory", "subCategory"],
+                    description:"category of the stream",
+                    properties:{
+                        mainCategory:{
+                            bsonType:"string",
+                            description:"main category of the stream"
+                        },
+                        subCategory:{
+                            bsonType:"string",
+                            description:"sub category of the stream"
+                        }
+                    }
+                },
+                published:{
+                    bsonType:"bool",
+                    description:"if the stream is marked to be viewed onDemand"
+                },
+                chat:{
+                    bsonType:["object"],
+                    description:"chat log of the stream",
+                    properties:{
+                        chatLog:{
+                            bsonType:"object",
+                            required:["user", "text", "createdAt"],
+                            properties:{
+                                user:{
+                                    bsonType:"object",
+                                    description:"user who wrote the message"
+                                },
+                                text:{
+                                    bsonType:"string",
+                                    description:"text of the message"
+                                },
+                                createdAt:{
+                                    bsonType:"timestamp",
+                                    description:"time when the message was written"
+                                }
+                            }
+                        }
+                    }
+                },
+                viewers:{
+                    bsonType:["object"],
+                    description:"list of viewers of the stream",
+                    properties:{
+                        viewers:{
+                            bsonType:"object",
+                            required:["user", "country", "type"],
+                            properties:{
+                                user:{
+                                    bsonType:"object",
+                                    description:"user who is watching the stream"
+                                },
+                                country:{
+                                    bsonType:"string",
+                                    description:"country of the user"
+                                },
+                                type:{
+                                    bsonType:"string",
+                                    description:"way the user is watching the stream",
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+})
+
+
+
+db.contents.find({"$where": "this.contents.category.subCategory  == this. x"},{"user": 1});
+
+// Proveer una consulta que dada una categoría determinada, retorne la lista de streamers que hayan
+// emitido contenido de dicha categoría.
+db.contents.aggregate([
+    {$match: {"category.subCategory": "Gaming"}},
+    {$group: {_id: "$user.name", count: {$sum: 1}}}
+])
