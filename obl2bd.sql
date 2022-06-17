@@ -28,7 +28,7 @@ CREATE TABLE Banners (
 
 CREATE TABLE Recoveries ( 
 	userId number primary key, 
-    type varchar(1) not null, 
+    type varchar(1) not null CHECK(type in ('M', 'P')),  -- 'M' para mail, 'P' para telefono
     data varchar(50) not null, 
     foreign key(userId) references Users(id) 
 );
@@ -212,3 +212,68 @@ insert into Users values (5, 'Juan', 'Juanito', 'Password1.', null, to_date('17-
 insert into Users values (1, 'Juana', 'Juanita', 'Password1.', null, to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
 -- Devido a que su userLevel no es valido
 insert into Users values (5, 'Nicolas', 'Nico', 'Password1.', null, to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Invalid Level', SYSDATE, 0);
+
+-- Photos:
+
+-- Validos:
+
+insert into Photos values (1, 'c:/misFotos/FotoDePerfil', 9, 'PNG');
+insert into Photos values (2, 'c:/misFotos/FotoDePerfilAlternativa', 9, 'JPEG');
+insert into Photos values (3, 'c:/misFotos/GifDePerfil', 9, 'GIF');
+
+-- Invalidos:
+
+-- Devido a que el tamaño del archivo es mayor a 10MB
+insert into Photos values (4, 'c:/misFotos/FotoDePerfil', 11, 'PNG');
+-- Devido a que el formato del archivo no es valido
+insert into Photos values (5, 'c:/misFotos/FotoDePerfil', 9, 'SVG');
+
+
+-- Banners:
+
+-- Validos:
+
+insert into Banners values (1, 'c:/misBanners/BannerParaMiCuenta', 9, 'PNG');
+insert into Banners values (2, 'c:/misBanners/BannerAlternativo', 9, 'JPEG');
+insert into Banners values (3, 'c:/misBanners/BannerGif', 9, 'GIF');
+
+-- Invalidos:
+
+-- Devido a que el tamaño del archivo es mayor a 10MB
+insert into Banners values (4, 'c:/misBanners/BannerParaMiCuenta', 11, 'PNG');
+-- Devido a que el formato del archivo no es valido
+insert into Banners values (5, 'c:/misBanners/BannerParaMiCuenta', 9, 'SVG');
+
+-- Recoveries:
+
+-- Validos:
+
+insert into Recoveries values (1, 'P', '098-765-432');
+insert into Recoveries values (2, 'M', 'rodrigo@gmail.com');
+
+-- Invalidos:
+
+-- Devido a que el tipo de dato no es valido
+insert into Recoveries values (3, 'A', '098-765-432');
+
+-- Follows:
+
+-- Validos:
+
+insert into Follows values (1, 2);
+insert into Follows values (1, 3);
+
+-- Invalidos:
+
+-- Devido a que el usuario no existe
+insert into Follows values (1, 5);
+-- Devido a que el usuario ya sigue al otro
+insert into Follows values (1, 2);
+
+
+-- TransactionTypes:
+-- Esta tabla es de datos creados por el negocio, no se debe modificar
+
+insert into TransactionTypes values (1, 300, 3.00);
+insert into TransactionTypes values (2, 5000, 64.40);
+insert into TransactionTypes values (3, 25000, 308.00);
