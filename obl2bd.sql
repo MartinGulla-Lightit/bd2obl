@@ -132,13 +132,19 @@ BEGIN
         RAISE_APPLICATION_ERROR(-20001, 'El usuario debe tener al menos 13 años para poder registrarse');  
     END IF; 
 END; 
+
+CREATE or replace TRIGGER addBits
+BEFORE INSERT OR UPDATE ON Transactions
+FOR EACH ROW
+DECLARE 
+    bits number;
+BEGIN
+    select tt.bits into bits from TransactionTypes tt where tt.id = :new.transactionTypeId;
+    UPDATE Users SET bitsAvailable = bitsAvailable + bits WHERE id = :new.userId;
+END;
+
  
 --req1:
---dado un rango de fechas y un usuario, 
---retorne:
-	--donaciones en Bits recibidas por el usuario en ese periodo. 
-	--cantidad total de donaciones
-	--total en Bits al usuario en el periodo.
  
 CREATE FUNCTION req1 (fechaInicio DATE, fechaFin DATE, userId number) RETURN NUMBER IS 
 BEGIN 
@@ -156,7 +162,6 @@ BEGIN
 END; 
 
 -- req2:
--- procedimiento que reciba un numero cant, y que imprima por consola los primeros cant usuarios que tengan mas suscriptores al momento dado
 
 CREATE or replace PROCEDURE req2 (cant number) IS
 cursor c_users is
@@ -174,8 +179,6 @@ END;
 
         
 -- req3:
--- Proveer un servicio que dada una fecha, renueve las suscripciones vigentes que corresponda. Se debe
--- considerar que la suscripción tenga un medio de pago asociado, si no es así, entonces se cancela
 
 create or replace procedure req3 (fecha DATE) 
 is
@@ -277,3 +280,17 @@ insert into Follows values (1, 2);
 insert into TransactionTypes values (1, 300, 3.00);
 insert into TransactionTypes values (2, 5000, 64.40);
 insert into TransactionTypes values (3, 25000, 308.00);
+
+-- Transactions:
+
+-- Validos:
+
+insert into Transactions values (1, 2, 'Paypal', SYSDATE);
+insert into Transactions values (2, 3, 'Crédito', SYSDATE);
+
+-- Invalidos:
+
+-- Devido a que el tipo de transacción no es valido
+insert into Transactions values (3, 5, 'Paypal', SYSDATE);
+-- Devido a que la forma de pago no es valida
+insert into Transactions values (4, 2, 'Débito', SYSDATE);
