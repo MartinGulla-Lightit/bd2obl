@@ -191,8 +191,24 @@ is
     end;
 
 
- 
+-- Datos de prueba 
 
-insert into Users (id, userName, publicName, password, bio, birthDate, photoId, bannerId, userLevel, createdAt, bitsAvailable)
-values (3, 'Juan', 'Juanito3', 'Password1.', '', SYSDATE, null, null, 'Streamer', SYSDATE, 0);
+-- Usuarios:
 
+-- Validos:
+
+insert into Users values (1, 'Juan', 'Juanito', 'Password1.', null, to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
+insert into Users values (2, 'Rodrigo', 'Ro', 'Password1.', 'Bienvenidos a mi canal!', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
+insert into Users values (3, 'Jaime', 'Jimmy', 'Password1.', '', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
+insert into Users values (4, 'Ana', 'Anita', 'Password1.', 'Hola, soy Anita :)', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
+
+-- Invalidos:
+
+-- Devido a que no es mayor a 13 años
+insert into Users values (5, 'Agustin', 'Agus', 'Password1.', null, to_date('17-05-2010', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
+-- Devido a que ya existe uno con ese publicName
+insert into Users values (5, 'Juan', 'Juanito', 'Password1.', null, to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
+-- Devido a que ya existe uno con ese id
+insert into Users values (1, 'Juana', 'Juanita', 'Password1.', null, to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
+-- Devido a que su userLevel no es valido
+insert into Users values (5, 'Nicolas', 'Nico', 'Password1.', null, to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Invalid Level', SYSDATE, 0);
