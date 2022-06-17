@@ -1,0 +1,194 @@
+CREATE TABLE Users ( 
+	id number primary key, 
+    userName varchar(50) not null, 
+    publicName varchar(50) not null unique,  
+    password varchar(50) not null, 
+    bio varchar(250), 
+    birthDate date not null, 
+    photoId number, 
+    bannerId number, 
+    userLevel varchar(50) not null CHECK(userLevel in ('Streamer', 'Afiliado', 'Partner')), 
+	createdAt timestamp not null, 
+    bitsAvailable number 
+);
+
+CREATE TABLE Photos ( 
+	id number primary key, 
+    imagePath varchar(250), 
+    imageSize number not null CHECK(imageSize <= 10), 
+    imageFormat varchar(5) CHECK(imageFormat IN ('JPEG', 'PNG', 'GIF')) 
+);
+
+CREATE TABLE Banners ( 
+	id number primary key, 
+    imagePath varchar(250), 
+    imageSize number not null CHECK(imageSize <= 10), 
+    imageFormat varchar(5) CHECK(imageFormat IN ('JPEG', 'PNG', 'GIF')) 
+);
+
+CREATE TABLE Recoveries ( 
+	userId number primary key, 
+    type varchar(1) not null, 
+    data varchar(50) not null, 
+    foreign key(userId) references Users(id) 
+);
+
+CREATE TABLE Follows ( 
+	fromUserId number, 
+    toUserId number, 
+    primary key(fromUserId, toUserId), 
+    foreign key(fromUserId) references Users(id), 
+    foreign key(toUserId) references Users(id) 
+);
+
+CREATE TABLE TransactionTypes ( 
+	id number primary key, 
+    bits number not null, 
+    price number not null 
+);
+
+CREATE TABLE Transactions ( 
+	userId number not null, 
+    transactionTypeId number not null, 
+    formOfPayment varchar(50) CHECK(formOfPayment IN ('Crédito', 'Paypal')), 
+    createdAt timestamp not null, 
+    primary key(userId, createdAt), 
+    foreign key(userId) references Users(id), 
+    foreign key(transactionTypeId) references TransactionTypes(id) 
+);
+
+CREATE TABLE Achievements ( 
+	id number primary key, 
+    description varchar(50) not null 
+);
+
+CREATE TABLE SubscriptionCountryPrices ( 
+	country varchar(50) primary key, 
+    price number not null 
+);
+
+CREATE TABLE Subscriptions ( 
+	fromUserId number not null, 
+    country varchar(50) not null, 
+    toUserId number not null, 
+    createdAt timestamp not null, 
+    formOfPayment varchar(50) not null, 
+    months number not null,
+    primary key(fromUserId, toUserId, createdAt), 
+    foreign key(fromUserId) references Users(id), 
+    foreign key(toUserId) references Users(id), 
+    foreign key(country) references SubscriptionCountryPrices(country) 
+);
+
+CREATE TABLE UserPaymentMethod ( 
+	userId number primary key, 
+    formOfPayment varchar(50), 
+    foreign key(userId) references Users(id) 
+);
+
+CREATE TABLE Donations( 
+    fromUserId number not null, 
+    toUserId number not null, 
+    bitsDonated number not null, 
+    fecha timestamp not null, 
+    primary key(fromUserId, toUserId, fecha), 
+    foreign key(fromUserId) references Users(id), 
+    foreign key(toUserId) references Users(id) 
+);
+
+CREATE or replace TRIGGER user_a_subs  
+BEFORE INSERT OR UPDATE ON Subscriptions
+FOR EACH ROW  
+DECLARE  
+    nivel VARCHAR(50);  
+BEGIN  
+    select u.userLevel into nivel from Users u  
+    where u.id = :new.fromUserId;  
+      
+    IF nivel NOT IN ('Afiliado','Partner') THEN  
+        RAISE_APPLICATION_ERROR(-20001, 'No se permiten suscripciones a canales que no sean de tipo Afiliado o Partner');  
+    END IF;  
+END;
+ 
+CREATE or replace TRIGGER notEnoughBits  
+BEFORE INSERT OR UPDATE ON Donations  
+FOR EACH ROW  
+DECLARE  
+    bits number;  
+BEGIN  
+    select u.bitsAvailable into bits from Users u  
+    where u.id = :new.fromUserId;  
+      
+    IF bits < :new.bitsDonated THEN  
+        RAISE_APPLICATION_ERROR(-20001, 'El usuario no tiene suficientes bits para realizar esta donación');  
+    END IF;  
+END; 
+
+CREATE or replace TRIGGER olderThanTwelve  
+BEFORE INSERT OR UPDATE ON Users  
+FOR EACH ROW  
+BEGIN       
+    IF (trunc(to_number(SYSDATE - to_date('05-02-1963', 'DD-MM-YYYY'))/365) < 13) THEN  
+        RAISE_APPLICATION_ERROR(-20001, 'El usuario debe tener al menos 13 años para poder registrarse');  
+    END IF;  
+END; 
+ 
+--req1:
+--dado un rango de fechas y un usuario, 
+--retorne:
+	--donaciones en Bits recibidas por el usuario en ese periodo. 
+	--cantidad total de donaciones
+	--total en Bits al usuario en el periodo.
+ 
+CREATE FUNCTION req1 (fechaInicio DATE, fechaFin DATE, userId number) RETURN NUMBER IS 
+BEGIN 
+    DECLARE  
+        cantDonaciones number; 
+        cantBits number; 
+    BEGIN 
+        SELECT count(*), sum(bitsDonated) 
+        INTO cantDonaciones, cantBits 
+        FROM Donations d 
+        WHERE d.toUserId = userId AND d.fecha > fechaInicio AND d.fecha < fechaFin; 
+        DBMS_OUTPUT.PUT_LINE('Amount of donations: ' || TO_CHAR(cantDonaciones) || ' Total of Bits: ' || TO_CHAR(cantBits)); 
+        RETURN cantBits; 
+    END; 
+END; 
+
+-- req2:
+-- procedimiento que reciba un numero cant, y que imprima por consola los primeros cant usuarios que tengan mas suscriptores al momento dado
+
+CREATE or replace PROCEDURE req2 (cant number) IS
+cursor c_users is
+    select u.publicName, count(*) as cantSuscriptores
+    from Users u, Subscriptions s
+    where u.id = s.toUserId and ADD_MONTHS(s.createdAt, s.months) > SYSDATE
+    group by u.publicName
+    order by cantSuscriptores desc
+    fetch first cant rows only;
+BEGIN
+    for c_users_row in c_users loop
+        DBMS_OUTPUT.PUT_LINE(c_users_row.publicName || ' has ' || c_users_row.cantSuscriptores || ' subscribers');
+    end loop;
+END;
+
+        
+-- req3:
+-- Proveer un servicio que dada una fecha, renueve las suscripciones vigentes que corresponda. Se debe
+-- considerar que la suscripción tenga un medio de pago asociado, si no es así, entonces se cancela
+
+create or replace procedure req3 (fecha DATE) 
+is
+    cursor c_suscripciones is
+        select s.fromUserId, s.country, s.toUserId, s.createdAt, s.months, upm.formOfPayment
+        from Subscriptions s, UserPaymentMethod upm
+        where ADD_MONTHS(s.createdAt, s.months) = fecha and s.fromUserId = upm.userId;
+    begin
+        for suscripcion in c_suscripciones loop
+            insert into Subscriptions (fromUserId, country, toUserId, createdAt, formOfPayment, months)
+            values (suscripcion.fromUserId, suscripcion.country, suscripcion.toUserId, suscripcion.createdAt, suscripcion.formOfPayment, suscripcion.months);
+        end loop;
+    end;
+
+
+ 
