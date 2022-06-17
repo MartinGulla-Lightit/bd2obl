@@ -128,7 +128,7 @@ CREATE or replace TRIGGER olderThanTwelve
 BEFORE INSERT OR UPDATE ON Users  
 FOR EACH ROW  
 BEGIN       
-    IF (trunc(to_number(SYSDATE - to_date('05-02-1963', 'DD-MM-YYYY'))/365) < 13) THEN  
+    IF (trunc(to_number(SYSDATE - to_date(:new.birthDate, 'DD-MM-YYYY'))/365) < 13) THEN  
         RAISE_APPLICATION_ERROR(-20001, 'El usuario debe tener al menos 13 años para poder registrarse');  
     END IF;  
 END; 
@@ -192,3 +192,7 @@ is
 
 
  
+
+insert into Users (id, userName, publicName, password, bio, birthDate, photoId, bannerId, userLevel, createdAt, bitsAvailable)
+values (3, 'Juan', 'Juanito3', 'Password1.', '', SYSDATE, null, null, 'Streamer', SYSDATE, 0);
+
