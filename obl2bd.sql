@@ -105,7 +105,7 @@ CREATE TABLE Donations(
 );
 
 CREATE or replace TRIGGER canCreateAccount  
-BEFORE INSERT OR UPDATE ON Users  
+BEFORE INSERT ON Users  
 FOR EACH ROW  
 BEGIN
     IF (trunc(months_between(SYSDATE, :new.birthDate)/12) < 13) THEN  
@@ -129,7 +129,7 @@ BEGIN
     END IF;  
 END;
  
-CREATE or replace TRIGGER notEnoughBits  
+CREATE or replace TRIGGER donateBits  
 BEFORE INSERT OR UPDATE ON Donations  
 FOR EACH ROW  
 DECLARE  
@@ -139,7 +139,8 @@ BEGIN
     where u.id = :new.fromUserId;  
     IF bits < :new.bitsDonated THEN  
         RAISE_APPLICATION_ERROR(-20001, 'El usuario no tiene suficientes bits para realizar esta donación');  
-    END IF;  
+    END IF;
+    update Users u set u.bitsAvailable = u.bitsAvailable - :new.bitsDonated where u.id = :new.fromUserId;  
 END; 
 
 CREATE or replace TRIGGER addBits
