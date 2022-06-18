@@ -81,7 +81,7 @@ CREATE TABLE Subscriptions (
     toUserId number not null, 
     createdAt timestamp not null, 
     formOfPayment varchar(50) not null, 
-    months number not null,
+    months number not null CHECK(months > 0),
     primary key(fromUserId, toUserId, createdAt), 
     foreign key(fromUserId) references Users(id), 
     foreign key(toUserId) references Users(id), 
