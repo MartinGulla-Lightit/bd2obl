@@ -13,11 +13,11 @@ db.createCollection("contents", {
                     description:"channel where the stream takes place"
                 },
                 startedAt:{
-                    bsonType:"string",
+                    bsonType:"timestamp",
                     description:"time when the stream was started"
                 },
                 endedAt:{
-                    bsonType:"string",
+                    bsonType:"timestamp",
                     description:"time when the stream was ended"
                 },
                 elapsedTime:{
@@ -84,7 +84,7 @@ db.createCollection("contents", {
                                 description:"message written by the user"
                             },
                             time:{
-                                bsonType:"string",
+                                bsonType:"timestamp",
                                 description:"time when the message was written"
                             }
                         }
