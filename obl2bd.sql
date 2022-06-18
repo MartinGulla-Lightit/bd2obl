@@ -72,7 +72,7 @@ CREATE TABLE UserAchievements (
 
 CREATE TABLE SubscriptionCountryPrices ( 
 	country varchar(50) primary key, 
-    price number not null 
+    price number not null CHECK(price > 0)
 );
 
 CREATE TABLE Subscriptions ( 
