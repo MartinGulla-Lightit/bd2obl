@@ -9,19 +9,19 @@ db.createCollection("contents", {
                     description:"title of the stream"
                 },
                 user:{
-                    bsonType:"object",
+                    bsonType:"number",
                     description:"channel where the stream takes place"
                 },
                 startedAt:{
-                    bsonType:"timestamp",
+                    bsonType:"string",
                     description:"time when the stream was started"
                 },
                 endedAt:{
-                    bsonType:"timestamp",
+                    bsonType:"string",
                     description:"time when the stream was ended"
                 },
                 elapsedTime:{
-                    bsonType:["number"],
+                    bsonType:"object",
                     description:"time elapsed during the stream",
                     properties:{
                         hours:{
@@ -70,49 +70,45 @@ db.createCollection("contents", {
                     description:"if the stream is marked to be viewed onDemand"
                 },
                 chat:{
-                    bsonType:["object"],
-                    description:"chat log of the stream",
-                    properties:{
-                        chatLog:{
-                            bsonType:"object",
-                            required:["user", "text", "createdAt"],
-                            properties:{
-                                user:{
-                                    bsonType:"object",
-                                    description:"user who wrote the message"
-                                },
-                                text:{
-                                    bsonType:"string",
-                                    description:"text of the message"
-                                },
-                                createdAt:{
-                                    bsonType:"timestamp",
-                                    description:"time when the message was written"
-                                }
+                    bsonType:["array"],
+                    items:{
+                        bsonType:"object",
+                        required:["user", "message", "time"],
+                        properties:{
+                            user:{
+                                bsonType:"number",
+                                description:"user who wrote the message"
+                            },
+                            message:{
+                                bsonType:"string",
+                                description:"message written by the user"
+                            },
+                            time:{
+                                bsonType:"string",
+                                description:"time when the message was written"
                             }
                         }
                     }
                 },
                 viewers:{
-                    bsonType:["object"],
+                    bsonType:["array"],
                     description:"list of viewers of the stream",
-                    properties:{
-                        viewers:{
-                            bsonType:"object",
-                            required:["user", "country", "type"],
-                            properties:{
-                                user:{
-                                    bsonType:"object",
-                                    description:"user who is watching the stream"
-                                },
-                                country:{
-                                    bsonType:"string",
-                                    description:"country of the user"
-                                },
-                                type:{
-                                    bsonType:"string",
-                                    description:"way the user is watching the stream",
-                                }
+                    items:{
+                        bsonType:"object",
+                        required:["user", "country", "type"],
+                        properties:{
+                            user:{
+                                bsonType:"number",
+                                description:"user who is watching the stream"
+                            },
+                            country:{
+                                bsonType:"string",
+                                description:"country of the user"
+                            },
+                            type:{
+                                bsonType:"string",
+                                description:"type of the user",
+                                enum:["on demand", "en vivo"]
                             }
                         }
                     }
@@ -120,8 +116,7 @@ db.createCollection("contents", {
             }
         }
     }
-})
-
+});
 
 
 db.contents.find({"$where": "this.contents.category.subCategory  == this. x"},{"user": 1});
