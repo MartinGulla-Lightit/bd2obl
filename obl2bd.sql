@@ -62,6 +62,14 @@ CREATE TABLE Achievements (
     description varchar(50) not null 
 );
 
+CREATE TABLE UserAchievements ( 
+	userId number,
+    achievementId number,
+    primary key(userId, achievementId),
+    foreign key(userId) references Users(id),
+    foreign key(achievementId) references Achievements(id)
+);
+
 CREATE TABLE SubscriptionCountryPrices ( 
 	country varchar(50) primary key, 
     price number not null 
