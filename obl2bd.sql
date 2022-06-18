@@ -103,7 +103,7 @@ DECLARE
     nivel VARCHAR(50);  
 BEGIN  
     select u.userLevel into nivel from Users u  
-    where u.id = :new.fromUserId;  
+    where u.id = :new.toUserId;  
       
     IF nivel NOT IN ('Afiliado','Partner') THEN  
         RAISE_APPLICATION_ERROR(-20001, 'No se permiten suscripciones a canales que no sean de tipo Afiliado o Partner');  
@@ -185,11 +185,11 @@ is
     cursor c_suscripciones is
         select s.fromUserId, s.country, s.toUserId, s.createdAt, s.months, upm.formOfPayment
         from Subscriptions s, UserPaymentMethod upm
-        where ADD_MONTHS(s.createdAt, s.months) = fecha and s.fromUserId = upm.userId;
+        where to_date(ADD_MONTHS(s.createdAt, s.months), 'DD-MM-YYYY') = to_date(SYSDATE, 'DD-MM-YYYY') and s.fromUserId = upm.userId;
     begin
         for suscripcion in c_suscripciones loop
             insert into Subscriptions (fromUserId, country, toUserId, createdAt, formOfPayment, months)
-            values (suscripcion.fromUserId, suscripcion.country, suscripcion.toUserId, suscripcion.createdAt, suscripcion.formOfPayment, suscripcion.months);
+            values (suscripcion.fromUserId, suscripcion.country, suscripcion.toUserId, fecha, suscripcion.formOfPayment, suscripcion.months);
         end loop;
     end;
 
@@ -201,8 +201,8 @@ is
 -- Validos:
 
 insert into Users values (1, 'Juan', 'Juanito', 'Password1.', null, to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
-insert into Users values (2, 'Rodrigo', 'Ro', 'Password1.', 'Bienvenidos a mi canal!', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
-insert into Users values (3, 'Jaime', 'Jimmy', 'Password1.', '', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
+insert into Users values (2, 'Rodrigo', 'Ro', 'Password1.', 'Bienvenidos a mi canal!', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Partner', SYSDATE, 0);
+insert into Users values (3, 'Jaime', 'Jimmy', 'Password1.', '', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Afiliado', SYSDATE, 0);
 insert into Users values (4, 'Ana', 'Anita', 'Password1.', 'Hola, soy Anita :)', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
 
 -- Invalidos:
@@ -294,3 +294,34 @@ insert into Transactions values (2, 3, 'Crédito', SYSDATE);
 insert into Transactions values (3, 5, 'Paypal', SYSDATE);
 -- Devido a que la forma de pago no es valida
 insert into Transactions values (4, 2, 'Débito', SYSDATE);
+
+-- SubscriptionCountryPrices
+
+-- Validos:
+
+insert into SubscriptionCountryPrices values ('Uruguay', 5);
+insert into SubscriptionCountryPrices values ('Argentina', 6);\
+
+-- Subscriptions:
+
+-- Validos:
+
+insert into Subscriptions values (1, 'Argentina', 2, SYSDATE, 'Paypal', 12);
+insert into Subscriptions values (2, 'Argentina', 3, SYSDATE, 'Paypal', 12);
+
+-- Invalidos:
+
+-- Devido a que el usuario no existe
+insert into Subscriptions values (3, 'Argentina', 5, SYSDATE, 'Paypal', 12);
+-- Devido a que el usuario ya tiene una suscripcion
+insert into Subscriptions values (1, 'Argentina', 2, SYSDATE, 'Paypal', 12);
+-- Devido a que el tipo de pago no es valido
+insert into Subscriptions values (4, 'Argentina', 2, SYSDATE, 'Débito', 12);
+-- Devido a que el userLevel no es valido
+insert into Subscriptions values (1, 'Argentina', 4, SYSDATE, 'Paypal', 12);
+
+-- PaymentMethods:
+
+-- Validos:
+
+insert into UserPaymentMethods values (1, 'Paypal');
