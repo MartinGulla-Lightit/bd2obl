@@ -104,16 +104,27 @@ CREATE TABLE Donations(
     foreign key(toUserId) references Users(id) 
 );
 
-CREATE or replace TRIGGER user_a_subs  
+CREATE or replace TRIGGER canCreateAccount  
+BEFORE INSERT OR UPDATE ON Users  
+FOR EACH ROW  
+BEGIN
+    IF (trunc(months_between(SYSDATE, :new.birthDate)/12) < 13) THEN  
+        RAISE_APPLICATION_ERROR(-20001, 'El usuario debe tener al menos 13 años para poder registrarse');  
+    END IF;
+    IF (:new.userLevel <> 'Streamer') THEN
+        RAISE_APPLICATION_ERROR(-20001, 'El usuario debe iniciar con nivel streamer para poder registrarse');
+    END IF;
+END; 
+
+CREATE or replace TRIGGER toUserCanReceiveSubscriptions  
 BEFORE INSERT OR UPDATE ON Subscriptions
 FOR EACH ROW  
 DECLARE  
-    nivel VARCHAR(50);  
+    level VARCHAR(50);  
 BEGIN  
-    select u.userLevel into nivel from Users u  
+    select u.userLevel into level from Users u  
     where u.id = :new.toUserId;  
-      
-    IF nivel NOT IN ('Afiliado','Partner') THEN  
+    IF level NOT IN ('Afiliado','Partner') THEN  
         RAISE_APPLICATION_ERROR(-20001, 'No se permiten suscripciones a canales que no sean de tipo Afiliado o Partner');  
     END IF;  
 END;
@@ -126,23 +137,13 @@ DECLARE
 BEGIN  
     select u.bitsAvailable into bits from Users u  
     where u.id = :new.fromUserId;  
-      
     IF bits < :new.bitsDonated THEN  
         RAISE_APPLICATION_ERROR(-20001, 'El usuario no tiene suficientes bits para realizar esta donación');  
     END IF;  
 END; 
 
-CREATE or replace TRIGGER olderThanTwelve  
-BEFORE INSERT OR UPDATE ON Users  
-FOR EACH ROW  
-BEGIN       
-    IF (trunc(months_between(sysdate, :new.birthDate)/12) < 13) THEN  
-        RAISE_APPLICATION_ERROR(-20001, 'El usuario debe tener al menos 13 años para poder registrarse');  
-    END IF; 
-END; 
-
 CREATE or replace TRIGGER addBits
-BEFORE INSERT OR UPDATE ON Transactions
+AFTER INSERT OR UPDATE ON Transactions
 FOR EACH ROW
 DECLARE 
     bits number;
