@@ -82,6 +82,7 @@ CREATE TABLE Subscriptions (
     createdAt timestamp not null, 
     formOfPayment varchar(50) not null, 
     months number not null CHECK(months > 0),
+    autoRenew varchar(1) not null CHECK(autoRenew in ('Y', 'N')),
     primary key(fromUserId, toUserId, createdAt), 
     foreign key(fromUserId) references Users(id), 
     foreign key(toUserId) references Users(id), 
@@ -199,16 +200,14 @@ END;
         
 -- req3:
 
-create or replace procedure req3 (fecha DATE) 
-is
+create or replace procedure req3 is
     cursor c_suscripciones is
         select s.fromUserId, s.country, s.toUserId, s.createdAt, s.months, upm.formOfPayment
         from Subscriptions s, UserPaymentMethod upm
-        where to_date(ADD_MONTHS(s.createdAt, s.months), 'DD-MM-YYYY') = to_date(SYSDATE, 'DD-MM-YYYY') and s.fromUserId = upm.userId;
+        where to_date(ADD_MONTHS(s.createdAt, s.months), 'DD-MM-YYYY') = to_date(SYSDATE, 'DD-MM-YYYY') and s.fromUserId = upm.userId and s.autoRenew = 'Y';
     begin
         for suscripcion in c_suscripciones loop
-            insert into Subscriptions (fromUserId, country, toUserId, createdAt, formOfPayment, months)
-            values (suscripcion.fromUserId, suscripcion.country, suscripcion.toUserId, fecha, suscripcion.formOfPayment, suscripcion.months);
+            insert into Subscriptions values (suscripcion.fromUserId, suscripcion.country, suscripcion.toUserId, SYSDATE, suscripcion.formOfPayment, suscripcion.months, 'Y');
         end loop;
     end;
 
@@ -223,6 +222,11 @@ insert into Users values (1, 'Juan', 'Juanito', 'Password1.', null, to_date('17-
 insert into Users values (2, 'Rodrigo', 'Ro', 'Password1.', 'Bienvenidos a mi canal!', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Partner', SYSDATE, 0);
 insert into Users values (3, 'Jaime', 'Jimmy', 'Password1.', '', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Afiliado', SYSDATE, 0);
 insert into Users values (4, 'Ana', 'Anita', 'Password1.', 'Hola, soy Anita :)', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
+
+--update user 2 to be a partner
+update Users set userLevel = 'Partner' where id = 2;
+--subscribe user 1 to user 2
+insert into Subscriptions values (1, 'Argentina', 2, to_date('17-05-2000', 'DD-MM-YYYY'), 'Y');
 
 -- Invalidos:
 
@@ -325,8 +329,8 @@ insert into SubscriptionCountryPrices values ('Argentina', 6);
 
 -- Validos:
 
-insert into Subscriptions values (1, 'Argentina', 2, SYSDATE, 'Paypal', 12);
-insert into Subscriptions values (2, 'Argentina', 3, SYSDATE, 'Paypal', 12);
+insert into Subscriptions values (1, 'Argentina', 2, to_date('18-05-2022', 'DD-MM-YYYY'), 'Paypal', 1, 'Y');
+insert into Subscriptions values (1, 'Argentina', 2, to_date('19-05-2022', 'DD-MM-YYYY'), 'Paypal', 1, 'N');
 
 -- Invalidos:
 
