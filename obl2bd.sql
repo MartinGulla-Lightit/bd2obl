@@ -153,6 +153,15 @@ BEGIN
     UPDATE Users SET bitsAvailable = bitsAvailable + bits WHERE id = :new.userId;
 END;
 
+CREATE or replace TRIGGER addPaymentMethod
+AFTER INSERT OR UPDATE ON Subscriptions
+FOR EACH ROW
+BEGIN
+    INSERT INTO UserPaymentMethod values(:new.fromUserId, :new.formOfPayment);
+EXCEPTION
+    WHEN DUP_VAL_ON_INDEX THEN
+        UPDATE UserPaymentMethod SET formOfPayment = :new.formOfPayment WHERE userId = :new.fromUserId;
+END;
  
 --req1:
  
@@ -310,7 +319,7 @@ insert into Transactions values (4, 2, 'Débito', SYSDATE);
 -- Validos:
 
 insert into SubscriptionCountryPrices values ('Uruguay', 5);
-insert into SubscriptionCountryPrices values ('Argentina', 6);\
+insert into SubscriptionCountryPrices values ('Argentina', 6);
 
 -- Subscriptions:
 
