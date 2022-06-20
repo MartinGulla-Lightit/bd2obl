@@ -164,7 +164,7 @@ EXCEPTION
         UPDATE UserPaymentMethod SET formOfPayment = :new.formOfPayment WHERE userId = :new.fromUserId;
 END;
  
---req1:
+-- Requerimiento 1:
  
 CREATE or REPLACE PROCEDURE req1 (fechaInicio DATE, fechaFin DATE, userId number) IS 
 BEGIN 
@@ -180,7 +180,7 @@ BEGIN
     END; 
 END;
 
--- req2:
+-- Requerimiento 2:
 
 CREATE or replace PROCEDURE req2 (cant number) IS
 cursor c_users is
@@ -197,7 +197,7 @@ BEGIN
 END;
 
         
--- req3:
+-- Requerimiento 3:
 
 create or replace procedure req3 is
     cursor c_suscripciones is
@@ -212,6 +212,7 @@ create or replace procedure req3 is
 
 
 -- Datos de prueba para los requerimientos
+-- Ejecutar datos de prueba en una base de datos limpia para no generar conflictos con datos ya existentes
 
 insert into Users values (1, 'Juan', 'Juanito', 'Password1.', null, to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
 insert into Users values (2, 'Rodrigo', 'Ro', 'Password1.', 'Bienvenidos a mi canal!', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
@@ -220,6 +221,8 @@ insert into Users values (4, 'Ana', 'Anita', 'Password1.', 'Hola, soy Anita :)',
 
 update Users set userLevel = 'Partner' where id = 2;
 update Users set userLevel = 'Partner' where id = 3;
+
+-- Requerimiento 1
 
 insert into TransactionTypes values (1, 300, 3.00);
 insert into TransactionTypes values (2, 5000, 64.40);
@@ -254,7 +257,7 @@ begin
     req1(to_date('13-06-2022','DD-MM-YYYY'), to_date('17-06-2022','DD-MM-YYYY'), 1);
 end;
 
--- mostrar 4 ss
+-- Requerimiento 2
 
 insert into SubscriptionCountryPrices values ('Uruguay', 5);
 
@@ -275,7 +278,7 @@ begin
     req2(3);
 end;
 
--- mostrar 3 ss
+-- Requerimiento 3
 
 delete from subscriptions;
 
@@ -294,3 +297,41 @@ begin
 end;
 
 select * from Subscriptions;
+
+-- Pruebas de triggers
+-- Ejecutar datos de prueba en una base de datos limpia para no generar conflictos con datos ya existentes
+
+-- Usuario es menor de edad
+
+insert into Users values (1, 'Juan', 'Juanito', 'Password1.', null, to_date('17-05-2020', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
+
+-- Usuario no empieza como streamer
+
+insert into Users values (1, 'Juan', 'Juanito', 'Password1.', null, to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Partner', SYSDATE, 0);
+
+-- Usuario no puede recibir suscripciones
+
+insert into Users values (1, 'Juan', 'Juanito', 'Password1.', null, to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
+insert into SubscriptionCountryPrices values ('Uruguay', 5);
+insert into Subscriptions values (1, 'Uruguay', 1, SYSDATE, 'Paypal', 1, 'Y');
+
+-- Cuando se compran bits se agregan a la cuenta
+insert into TransactionTypes values (1, 300, 3.00);
+insert into Transactions values (1, 1, 'Paypal', SYSDATE);
+select bitsAvailable from Users where id = 1;
+
+-- Cuando se donan bits se restan a la cuenta
+
+insert into Donations values (1, 1, 300, SYSDATE);
+select bitsAvailable from Users where id = 1;
+
+-- Cuando se donan bits se tienen que tener disponibles
+
+insert into Donations values (1, 1, 300, add_months(SYSDATE, 1));
+
+-- Cuando se crea una suscripcion, se crea/actualiza el metodo de pago del usuario
+
+select * from UserPaymentMethod where userId = 1;
+update Users set userLevel = 'Partner' where id = 1;
+insert into Subscriptions values (1, 'Uruguay', 1, SYSDATE, 'Paypal', 1, 'Y');
+select * from UserPaymentMethod where userId = 1;
