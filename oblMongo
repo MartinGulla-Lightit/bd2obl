@@ -128,19 +128,16 @@ req4 = function(cat){
   return db.contents.find({"category.mainCategory" : cat},{user : 1});
 };
 
-req4("Azucar").pretty();
 
-req5 = function(streamTitle){
+req5 = function(streamId){
 return  db.contents.aggregate([
-     {$match:  {title: streamTitle}},
+     {$match:  {_id: ObjectId(streamId)}},
      {$unwind: "$viewers"},
      {$unwind : "$viewers.country"},  
     {$group : {_id : "$viewers.country", count : {$sum : 1}}},
     {$sort:  {count : -1}},
 ])
 }
-
-req5("Como una papa me salvo la vida (inesperado)").pretty();
 
 
 //DATOS DE PRUEBA
