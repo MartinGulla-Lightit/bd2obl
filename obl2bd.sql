@@ -166,7 +166,7 @@ END;
  
 --req1:
  
-CREATE FUNCTION req1 (fechaInicio DATE, fechaFin DATE, userId number) RETURN NUMBER IS 
+CREATE or REPLACE PROCEDURE req1 (fechaInicio DATE, fechaFin DATE, userId number) IS 
 BEGIN 
     DECLARE  
         cantDonaciones number; 
@@ -177,9 +177,8 @@ BEGIN
         FROM Donations d 
         WHERE d.toUserId = userId AND d.fecha > fechaInicio AND d.fecha < fechaFin; 
         DBMS_OUTPUT.PUT_LINE('Amount of donations: ' || TO_CHAR(cantDonaciones) || ' Total of Bits: ' || TO_CHAR(cantBits)); 
-        RETURN cantBits; 
     END; 
-END; 
+END;
 
 -- req2:
 
@@ -212,139 +211,86 @@ create or replace procedure req3 is
     end;
 
 
--- Datos de prueba 
-
--- Usuarios:
-
--- Validos:
+-- Datos de prueba para los requerimientos
 
 insert into Users values (1, 'Juan', 'Juanito', 'Password1.', null, to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
-insert into Users values (2, 'Rodrigo', 'Ro', 'Password1.', 'Bienvenidos a mi canal!', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Partner', SYSDATE, 0);
-insert into Users values (3, 'Jaime', 'Jimmy', 'Password1.', '', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Afiliado', SYSDATE, 0);
+insert into Users values (2, 'Rodrigo', 'Ro', 'Password1.', 'Bienvenidos a mi canal!', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
+insert into Users values (3, 'Jaime', 'Jimmy', 'Password1.', '', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
 insert into Users values (4, 'Ana', 'Anita', 'Password1.', 'Hola, soy Anita :)', to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
 
---update user 2 to be a partner
 update Users set userLevel = 'Partner' where id = 2;
---subscribe user 1 to user 2
-insert into Subscriptions values (1, 'Argentina', 2, to_date('17-05-2000', 'DD-MM-YYYY'), 'Y');
-
--- Invalidos:
-
--- Devido a que no es mayor a 13 años
-insert into Users values (5, 'Agustin', 'Agus', 'Password1.', null, to_date('17-05-2010', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
--- Devido a que ya existe uno con ese publicName
-insert into Users values (5, 'Juan', 'Juanito', 'Password1.', null, to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
--- Devido a que ya existe uno con ese id
-insert into Users values (1, 'Juana', 'Juanita', 'Password1.', null, to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Streamer', SYSDATE, 0);
--- Devido a que su userLevel no es valido
-insert into Users values (5, 'Nicolas', 'Nico', 'Password1.', null, to_date('17-05-2000', 'DD-MM-YYYY'), null, null, 'Invalid Level', SYSDATE, 0);
-
--- Photos:
-
--- Validos:
-
-insert into Photos values (1, 'c:/misFotos/FotoDePerfil', 9, 'PNG');
-insert into Photos values (2, 'c:/misFotos/FotoDePerfilAlternativa', 9, 'JPEG');
-insert into Photos values (3, 'c:/misFotos/GifDePerfil', 9, 'GIF');
-
--- Invalidos:
-
--- Devido a que el tamaño del archivo es mayor a 10MB
-insert into Photos values (4, 'c:/misFotos/FotoDePerfil', 11, 'PNG');
--- Devido a que el formato del archivo no es valido
-insert into Photos values (5, 'c:/misFotos/FotoDePerfil', 9, 'SVG');
-
-
--- Banners:
-
--- Validos:
-
-insert into Banners values (1, 'c:/misBanners/BannerParaMiCuenta', 9, 'PNG');
-insert into Banners values (2, 'c:/misBanners/BannerAlternativo', 9, 'JPEG');
-insert into Banners values (3, 'c:/misBanners/BannerGif', 9, 'GIF');
-
--- Invalidos:
-
--- Devido a que el tamaño del archivo es mayor a 10MB
-insert into Banners values (4, 'c:/misBanners/BannerParaMiCuenta', 11, 'PNG');
--- Devido a que el formato del archivo no es valido
-insert into Banners values (5, 'c:/misBanners/BannerParaMiCuenta', 9, 'SVG');
-
--- Recoveries:
-
--- Validos:
-
-insert into Recoveries values (1, 'P', '098-765-432');
-insert into Recoveries values (2, 'M', 'rodrigo@gmail.com');
-
--- Invalidos:
-
--- Devido a que el tipo de dato no es valido
-insert into Recoveries values (3, 'A', '098-765-432');
-
--- Follows:
-
--- Validos:
-
-insert into Follows values (1, 2);
-insert into Follows values (1, 3);
-
--- Invalidos:
-
--- Devido a que el usuario no existe
-insert into Follows values (1, 5);
--- Devido a que el usuario ya sigue al otro
-insert into Follows values (1, 2);
-
-
--- TransactionTypes:
--- Esta tabla es de datos creados por el negocio, no se debe modificar
+update Users set userLevel = 'Partner' where id = 3;
 
 insert into TransactionTypes values (1, 300, 3.00);
 insert into TransactionTypes values (2, 5000, 64.40);
 insert into TransactionTypes values (3, 25000, 308.00);
 
--- Transactions:
+insert into Transactions values (1, 3, 'Paypal', SYSDATE);
 
--- Validos:
+insert into Donations values (1, 2, 100, to_date('10-06-2022','DD-MM-YYYY'));
+insert into Donations values (1, 2, 200, to_date('11-06-2022','DD-MM-YYYY'));
+insert into Donations values (1, 2, 300, to_date('12-06-2022','DD-MM-YYYY'));
+insert into Donations values (1, 2, 400, to_date('13-06-2022','DD-MM-YYYY'));
+insert into Donations values (1, 2, 500, to_date('14-06-2022','DD-MM-YYYY'));
 
-insert into Transactions values (1, 2, 'Paypal', SYSDATE);
-insert into Transactions values (2, 3, 'Crédito', SYSDATE);
+insert into Donations values (1, 3, 100, to_date('10-06-2022','DD-MM-YYYY'));
+insert into Donations values (1, 3, 200, to_date('11-06-2022','DD-MM-YYYY'));
+insert into Donations values (1, 3, 300, to_date('12-06-2022','DD-MM-YYYY'));
+insert into Donations values (1, 3, 400, to_date('13-06-2022','DD-MM-YYYY'));
 
--- Invalidos:
+begin
+    req1(to_date('09-06-2022','DD-MM-YYYY'), to_date('15-06-2022','DD-MM-YYYY'), 2);
+end;
 
--- Devido a que el tipo de transacción no es valido
-insert into Transactions values (3, 5, 'Paypal', SYSDATE);
--- Devido a que la forma de pago no es valida
-insert into Transactions values (4, 2, 'Débito', SYSDATE);
+begin
+    req1(to_date('09-06-2022','DD-MM-YYYY'), to_date('13-06-2022','DD-MM-YYYY'), 2);
+end;
 
--- SubscriptionCountryPrices
+begin
+    req1(to_date('13-06-2022','DD-MM-YYYY'), to_date('17-06-2022','DD-MM-YYYY'), 3);
+end;
 
--- Validos:
+begin
+    req1(to_date('13-06-2022','DD-MM-YYYY'), to_date('17-06-2022','DD-MM-YYYY'), 1);
+end;
+
+-- mostrar 4 ss
 
 insert into SubscriptionCountryPrices values ('Uruguay', 5);
-insert into SubscriptionCountryPrices values ('Argentina', 6);
 
--- Subscriptions:
+insert into Subscriptions values (1, 'Uruguay', 3, SYSDATE, 'Paypal', 1, 'Y');
+insert into Subscriptions values (2, 'Uruguay', 3, SYSDATE, 'Paypal', 1, 'Y');
+insert into Subscriptions values (3, 'Uruguay', 2, SYSDATE, 'Paypal', 1, 'Y');
+insert into Subscriptions values (4, 'Uruguay', 2, SYSDATE, 'Paypal', 1, 'Y');
+insert into Subscriptions values (2, 'Uruguay', 2, SYSDATE, 'Paypal', 1, 'Y');
+insert into Subscriptions values (1, 'Uruguay', 2, to_date('10-10-2000', 'DD-MM-YYYY'), 'Paypal', 1, 'Y');
 
--- Validos:
+begin
+    req2(1);
+end;
+begin
+    req2(2);
+end;
+begin
+    req2(3);
+end;
 
-insert into Subscriptions values (1, 'Argentina', 2, to_date('18-05-2022', 'DD-MM-YYYY'), 'Paypal', 1, 'Y');
-insert into Subscriptions values (1, 'Argentina', 2, to_date('19-05-2022', 'DD-MM-YYYY'), 'Paypal', 1, 'N');
+-- mostrar 3 ss
 
--- Invalidos:
+delete from subscriptions;
 
--- Devido a que el usuario no existe
-insert into Subscriptions values (3, 'Argentina', 5, SYSDATE, 'Paypal', 12);
--- Devido a que el usuario ya tiene una suscripcion
-insert into Subscriptions values (1, 'Argentina', 2, SYSDATE, 'Paypal', 12);
--- Devido a que el tipo de pago no es valido
-insert into Subscriptions values (4, 'Argentina', 2, SYSDATE, 'Débito', 12);
--- Devido a que el userLevel no es valido
-insert into Subscriptions values (1, 'Argentina', 4, SYSDATE, 'Paypal', 12);
+insert into Subscriptions values (1, 'Uruguay', 3, add_months(SYSDATE, -1), 'Paypal', 1, 'Y');
+insert into Subscriptions values (2, 'Uruguay', 3, add_months(SYSDATE, -1), 'Paypal', 1, 'N');
+insert into Subscriptions values (3, 'Uruguay', 3, add_months(SYSDATE, -2), 'Paypal', 1, 'Y');
+insert into Subscriptions values (4, 'Uruguay', 3, add_months(SYSDATE, -1), 'Paypal', 1, 'Y');
 
--- PaymentMethods:
+delete from UserPaymentMethod where userId = 4;
 
--- Validos:
+select * from Subscriptions;
+select * from UserPaymentMethod;
 
-insert into UserPaymentMethods values (1, 'Paypal');
+begin 
+    req3;
+end;
+
+select * from Subscriptions;
