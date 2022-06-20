@@ -2,22 +2,24 @@ db.createCollection("contents", {
     validator: {
         $jsonSchema:{
             bsonType:"object",
-            required :["title", "user", "startedAt", "quality", "category"],
             properties:{
                 title:{
-                    bsonType:"string",
-                    description:"title of the stream"
+                    bsonType: ["array"],
+                    items:{
+                        bsonType:"string",
+                        description:"title of the stream"
+                    }
                 },
                 user:{
                     bsonType:"number",
                     description:"channel where the stream takes place"
                 },
                 startedAt:{
-                    bsonType:"timestamp",
+                    bsonType:"date",
                     description:"time when the stream was started"
                 },
                 endedAt:{
-                    bsonType:"timestamp",
+                    bsonType:"date",
                     description:"time when the stream was ended"
                 },
                 elapsedTime:{
@@ -26,13 +28,11 @@ db.createCollection("contents", {
                     properties:{
                         hours:{
                         bsonType:"number",
-                        minimum:0,
-                        maximum:23
                         },
                         minutes:{
                             bsonType:"number",
                             minimum:0,
-                            maximum:59
+                            maximum:59      
                         },
                         seconds:{
                             bsonType:"number",
@@ -45,23 +45,26 @@ db.createCollection("contents", {
                     bsonType:"number",
                     description:"peak number of spectators"
                 },
-                quality:{
+                quality :{
                     bsonType:"string",
                     description:"quality of the stream",
                     enum:["UHD", "QHD", "1080p60", "720p60", "480p", "360p", "160p"]
                 },
                 category:{
-                    bsonType:"object",
-                    required:["mainCategory", "subCategory"],
-                    description:"category of the stream",
-                    properties:{
-                        mainCategory:{
-                            bsonType:"string",
-                            description:"main category of the stream"
-                        },
-                        subCategory:{
-                            bsonType:"string",
-                            description:"sub category of the stream"
+                    bsonType:["array"],
+                    items:{
+                        bsonType:"object",
+                        required:["mainCategory", "subCategory"],
+                        description:"category of the stream",
+                        properties:{
+                            mainCategory:{
+                                bsonType:"string",
+                                description:"main category of the stream"
+                            },
+                            subCategory:{
+                                bsonType:"string",
+                                description:"sub category of the stream"
+                            }
                         }
                     }
                 },
@@ -84,7 +87,7 @@ db.createCollection("contents", {
                                 description:"message written by the user"
                             },
                             time:{
-                                bsonType:"timestamp",
+                                bsonType:"date",
                                 description:"time when the message was written"
                             }
                         }
@@ -94,36 +97,207 @@ db.createCollection("contents", {
                     bsonType:["array"],
                     description:"list of viewers of the stream",
                     items:{
-                        bsonType:"object",
-                        required:["user", "country", "type"],
-                        properties:{
-                            user:{
-                                bsonType:"number",
-                                description:"user who is watching the stream"
-                            },
-                            country:{
-                                bsonType:"string",
-                                description:"country of the user"
-                            },
-                            type:{
-                                bsonType:"string",
-                                description:"type of the user",
-                                enum:["on demand", "en vivo"]
+                            bsonType:"object",
+                            required:["user", "country", "type"],
+                            properties:{
+                                user:{
+                                    bsonType:"number",
+                                    description:"user who is watching the stream"
+                                },
+                                country:{
+                                    bsonType:"string",
+                                    description:"country of the user"
+                                },
+                                type:{
+                                    bsonType:"string",
+                                    enum:["on demand", "en vivo"],
+                                    description:"way the user is watching the stream",
+                                }
                             }
-                        }
+                        
                     }
                 }
             }
         }
     }
-});
+})
+use oblig
 
+//REQUERIMIENTOS
+req4 = function(cat){
+  return db.contents.find({"category.mainCategory" : cat},{user : 1});
+};
 
-db.contents.find({"$where": "this.contents.category.subCategory  == this. x"},{"user": 1});
+req4("Azucar").pretty();
 
-// Proveer una consulta que dada una categoría determinada, retorne la lista de streamers que hayan
-// emitido contenido de dicha categoría.
-db.contents.aggregate([
-    {$match: {"category.subCategory": "Gaming"}},
-    {$group: {_id: "$user.name", count: {$sum: 1}}}
+req5 = function(streamTitle){
+return  db.contents.aggregate([
+     {$match:  {title: streamTitle}},
+     {$unwind: "$viewers"},
+     {$unwind : "$viewers.country"},  
+    {$group : {_id : "$viewers.country", count : {$sum : 1}}},
+    {$sort:  {count : -1}},
 ])
+}
+
+req5("Como una papa me salvo la vida (inesperado)").pretty();
+
+
+//DATOS DE PRUEBA
+db.contents.insertOne({
+ title: ["el stream de fefi", "probando azucar por primera vez (sale mal)"],
+ user : 1,
+ startedAt :  new Date("2016-05-18T16:00:00Z"),
+ endedAt : new Date("016-05-18T17:00:00Z"),
+ elapsedTime : {hours : 1, minutes : 0,seconds : 0},
+ peakSpectator : 2,
+ quality : "UHD",
+ category : [{mainCategory: "Azucar", subCategory : "Diabetes"}],
+ published : true,
+ chat : [ {user : 1, message : 'Hola', time :  new Date("2016-05-18T16:01:00Z")}, {user : 2, message : 'Chau', time :  new Date("2016-05-18T16:02:00Z")}],
+ viewers : [{user : 2, country : "Alemania", type : "en vivo"}, {user : 3, country : "Perú", type : "en vivo"}]
+})
+
+
+db.contents.insertOne({
+ title: ["2 HORAS DE AJEDREZ", "Estudiando apertura italiana"],
+ user : 2,
+ startedAt :  new Date("2016-07-18T16:00:00Z"),
+ endedAt :  new Date("2016-07-18T18:00:00Z"),
+ elapsedTime : {hours : 2, minutes : 0, seconds : 0},
+ peakSpectator : 4,
+ quality : "1080p60",
+ category : [{mainCategory: "Ajedrez", subCategory : "Aperturas"},{mainCategory: "Finales", subCategory : "Mate de Greco"}],
+ published : true,
+ chat : [ {user : 1, message : 'Buena movida', time :  new Date("2016-07-18T17:00:00Z")}, {user : 3, message : 'Bienn', time :  new Date("2016-07-18T17:40:00Z")}],
+ viewers : [{user : 1, country : "Francia", type : "en vivo"}, {user : 3, country : "Perú", type : "en vivo"}, {user : 4, country : "Perú", type : "en vivo"}, {user : 5, country : "Perú", type : "en vivo"}]
+})
+
+
+db.contents.insertOne({
+ title: ["Plantando papas con fefi"],
+ user : 1,
+ startedAt :  new Date("2020-05-18T16:00:00Z"),
+ endedAt :   new Date("2020-05-18T19:00:00Z"),
+ elapsedTime : {hours : 3, minutes : 0, seconds : 0},
+ peakSpectator : 3,
+ quality : "360p",
+ category : [{mainCategory: "Papas", subCategory : "vegetales"},{mainCategory: "hervir una papa", subCategory : "pelar una papa"}],
+ published : true,
+ chat : [ {user : 2, message : 'Que pinta que tiene esa papa!!', time :  new Date("2020-05-18T16:30:00Z")}, 
+ {user : 3, message : 'Yo hubiera hervido la papa un poco menos pero igual es una buena papa', time :  new Date("2020-05-18T16:40:00Z")}],
+ viewers : [{user : 2, country : "Ecuador", type : "en vivo"}, {user : 3, country : "Finlandia", type : "en vivo"} , {user : 4, country : "Finlandia", type : "en vivo"}]
+})
+
+db.contents.insertOne({
+ title: ["aprende a usar mongoDB en 10 minutos", "aprenda a usar oracle en 10 minutos"],
+ user : 4,
+ startedAt :  new Date("2016-09-18T16:00:00Z"),
+ endedAt :   new Date("2016-09-18T16:30:00Z"),
+ elapsedTime : {hours : 0, minutes : 30, seconds : 0},
+ peakSpectator : 2,
+ quality : "360p",
+ category : [{mainCategory: "aprender", subCategory : "programacion"},{mainCategory: "aprender", subCategory : "oracle"}],
+ published : true,
+ chat : [ {user : 2, message : 'no entiendo nada', time :  new Date("2016-05-18T16:05:00Z")}],
+ viewers : [{user : 2, country : "Ecuador", type : "en vivo"}, {user : 5, country : "Finlandia", type : "en vivo"}]
+})
+
+
+db.contents.insertOne({
+ title: ["torneo final del mundo del ajedrez"],
+ user : 3,
+ startedAt :  new Date("2016-05-18T16:00:00Z"),
+ endedAt :   new Date("2016-05-18T20:00:00Z"),
+ elapsedTime : {hours : 4, minutes : 0, seconds : 0},
+ peakSpectator : 2,
+ quality : "1080p60",
+ category : [{mainCategory: "Ajedrez", subCategory : "final"},{mainCategory: "Entrevista", subCategory : "Gambito de dama"}],
+ published : true,
+ chat : [ {user : 1, message : 'Oh por dios que nervios', time :  new Date("2016-05-18T16:10:00Z")}],
+ viewers : [{user : 5, country : "Bolivia", type : "on demand"}, {user : 5, country : "Finlandia", type : "en vivo"}]
+})
+
+
+db.contents.insertOne({
+ title: ["Estudiando posicion de Lucena"],
+ user : 8,
+ startedAt :  new Date("2017-05-12T16:00:00Z"),
+ endedAt :  new Date ("2017-05-12T19:00:00Z"),
+ elapsedTime : {hours : 3, minutes : 0, seconds : 0},
+ peakSpectator : 2,
+ quality : "360p",
+ category : [{mainCategory: "Ajedrez", subCategory : "mates"},{mainCategory: "Jugadas conocidas de ajedrez", subCategory : "Finales"}],
+ published : true,
+ chat : [ {user : 5, message : 'Genial!', time :  new Date("2017-05-12T18:00:00Z")}],
+ viewers : [{user : 5, country : "Nigeria", type : "on demand"}, {user : 5, country : "Finlandia", type : "en vivo"}]
+})
+
+db.contents.insertOne({
+title: ["Aprende la defensa siciliana!"],
+user : 3,
+startedAt : new Date("2016-05-18T16:00:00Z"),
+endedAt :  new Date("2016-05-18T19:00:00Z"),
+elapsedTime : {hours : 3, minutes : 0, seconds : 0},
+peakSpectator : 2,
+quality : "1080p60",
+category : [{mainCategory: "Ajedrez", subCategory : "Aprende"},{mainCategory: "Juego", subCategory : "Estrategia"}],
+published : true,
+chat : [ {user : 1, message : 'Que buen video, siempre quise aprender esa jugada', time :  new Date("2016-05-18T18:00:00Z")}],
+viewers : [{user : 5, country : "Argentina", type : "on demand"}, {user : 1, country : "Uruguay", type : "en vivo"}]
+})
+
+db.contents.insertOne({
+    title: ["Papas a la crema, receta secreta"],
+    user : 3,
+    startedAt :  new Date("2018-07-18T16:00:00Z"),
+    endedAt :  new Date("2018-07-18T19:00:00Z"),
+    elapsedTime : {hours : 3, minutes : 0, seconds : 0},
+    peakSpectator : 2,
+    quality : "1080p60",
+    category : [{mainCategory: "Papas", subCategory : "JunkFood"},{mainCategory: "Cocina", subCategory : "Facil"}],
+    published : true,
+    chat : [ {user : 2, message : 'Toda mi familia me felicito por este exquisito plato!', time :  new Date("2018-05-18T16:02:00Z")}],
+    viewers : [{user : 2, country : "Argentina", type : "on demand"}, {user : 1, country : "Uruguay", type : "en vivo"}]
+    })
+
+ db.contents.insertOne({
+        title: ["Story time: mi addiccion al azucar"],
+        user : 3,
+        startedAt : new Date("2013-08-18T16:00:00Z"),
+        endedAt : new Date("2013-08-18T19:00:00Z"),
+        elapsedTime : {hours : 3, minutes : 0, seconds : 0},
+        peakSpectator : 2,
+        quality : "360p",
+        category : [{mainCategory: "Azucar", subCategory : "Sobredosis"},{mainCategory: "Historias", subCategory : "Transtornos"}],
+        published : true,
+        chat : [ {user : 2, message : 'Espero que ya estes mejor! Te deseo lo mejor', time : new Date("2013-08-18T16:20:00Z")},
+                {user : 1, message : 'Te mando fuerzas!', time : new Date("2013-08-18T17:00:00Z")}], 
+        viewers : [{user : 2, country : "Colombia", type : "on demand"}, {user : 1, country : "Uruguay", type : "en vivo"},{user : 5, country : "Venezuela", type : "en vivo"}]
+        })
+
+db.contents.insertOne({
+            title: ["Como una papa me salvo la vida (inesperado)"],
+            user : 3,
+            startedAt :  new Date("2016-05-18T16:00:00Z"),
+            endedAt :  new Date("2016-07-18T20:00:00Z"),
+            elapsedTime : {hours : 4, minutes : 0, seconds : 0},
+            peakSpectator : 4,
+            quality : "1080p60",
+            category : [{mainCategory: "Papas", subCategory : "Plato"},{mainCategory: "Historias", subCategory : "Emocional"}],
+            published : true,
+            chat : [ {user : 2, message : 'Wow, quien diria que una papa lograria eso! hahaa', time : new Date("2016-05-18T19:00:00Z")},
+                    {user : 4, message : 'Voy a salir de mi casa con una papa en el bolso de ahora en mas', time :  new Date("2016-05-18T18:00:00Z")}],
+            viewers : [{user : 4, country : "Chile", type : "on demand"}, {user : 2, country : "Puerto Rico", type : "en vivo"}
+                        ,{user : 7, country : "Panama", type : "en vivo"},{user : 8, country : "Mexico", type : "en vivo"}]
+            })
+
+
+
+
+
+
+
+
+
+
